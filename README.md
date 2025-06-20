@@ -1,138 +1,71 @@
-# VS Code Cucumber Godog Extension
+# cucumber-godog README
 
-This extension provides support for the [Godog](https://github.com/cucumber/godog) testing framework in Visual Studio Code, which is a Cucumber implementation for Go.
+This is the README for your extension "cucumber-godog". After writing up a brief description, we recommend including the following sections.
 
 ## Features
 
-- Run Godog tests directly from VS Code
-- Support for Cucumber feature files
-- Integration with Go projects
+Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
 
-## Development Setup
+For example if there is an image subfolder under your extension project workspace:
 
-### Prerequisites
+\!\[feature X\]\(images/feature-x.png\)
 
-- [Node.js](https://nodejs.org/) (v14 or later)
-- [npm](https://www.npmjs.com/) (v6 or later)
-- [Visual Studio Code](https://code.visualstudio.com/)
+> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
 
-### Getting Started
+## Requirements
 
-1. Clone this repository
-2. Run `npm install` to install dependencies
-3. Open the project in VS Code
+If you have any requirements or dependencies, add a section describing those and how to install and configure them.
 
-### Project Structure
+## Extension Settings
 
-- `package.json`: Extension manifest
-- `src/index.ts`: Main extension entry point
-- `src/test/`: Test files
+Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
 
-## Development Workflow
+For example:
 
-### Building the Extension
+This extension contributes the following settings:
 
-```bash
-npm run build
-```
+* `myExtension.enable`: Enable/disable this extension.
+* `myExtension.thing`: Set to `blah` to do something.
 
-This will compile the TypeScript code to JavaScript in the `dist` directory.
+## Known Issues
 
-### Watching for Changes
+Calling out known issues can help limit users opening duplicate issues against your extension.
 
-```bash
-npm run watch
-```
+## Release Notes
 
-This will watch for changes in your TypeScript files and automatically compile them.
+Users appreciate release notes as you update your extension.
 
-### Running the Extension
+### 1.0.0
 
-1. Press `F5` in VS Code to start a new window with your extension loaded
-2. Run the command "Run Godog Test" from the Command Palette (Ctrl+Shift+P)
+Initial release of ...
 
-### Debugging the Extension
+### 1.0.1
 
-1. Set breakpoints in your TypeScript code
-2. Press `F5` to start debugging
-3. The debugger will stop at your breakpoints
+Fixed issue #.
 
-### Running Tests
+### 1.1.0
 
-```bash
-npm test
-```
+Added features X, Y, and Z.
 
-This will run the extension tests.
+---
 
-## Implementing Extension Features
+## Following extension guidelines
 
-### Adding Commands
+Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
 
-1. Add a new command in the `contributes.commands` section of `package.json`
-2. Register the command in the `activate` function in `src/index.ts`
+* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
 
-Example:
+## Working with Markdown
 
-```typescript
-const disposable = vscode.commands.registerCommand('cucumber-godog.newCommand', () => {
-    // Command implementation
-});
-context.subscriptions.push(disposable);
-```
+You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
 
-### Working with Godog
+* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
+* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
+* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
 
-To implement Godog-specific functionality:
+## For more information
 
-1. Use the child_process module to run Godog commands
-2. Parse the output to provide feedback in VS Code
-3. Consider using the VS Code task system for long-running tasks
+* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
+* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
 
-Example:
-
-```typescript
-import * as cp from 'child_process';
-
-// Run Godog in the current workspace
-const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-const process = cp.spawn('godog', ['run'], { cwd: workspacePath });
-
-// Create an output channel
-const outputChannel = vscode.window.createOutputChannel('Godog');
-outputChannel.show();
-
-// Display output
-process.stdout.on('data', (data) => {
-    outputChannel.append(data.toString());
-});
-```
-
-## Publishing the Extension
-
-### Preparing for Publication
-
-1. Update the `publisher` field in `package.json` with your publisher ID
-2. Update the version number in `package.json`
-3. Make sure you have a good README.md and icon
-
-### Publishing to VS Code Marketplace
-
-1. Install vsce: `npm install -g vsce`
-2. Create a publisher on [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage)
-3. Get a Personal Access Token (PAT) from Azure DevOps
-4. Login with vsce: `vsce login <publisher>`
-5. Package the extension: `vsce package`
-6. Publish the extension: `vsce publish`
-
-For more details, see the [Publishing Extensions](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) guide.
-
-## Resources
-
-- [VS Code Extension API](https://code.visualstudio.com/api)
-- [Godog Documentation](https://github.com/cucumber/godog)
-- [Cucumber Documentation](https://cucumber.io/docs/cucumber/)
-
-## License
-
-[MIT](LICENSE)
+**Enjoy!**
