@@ -47,7 +47,32 @@
       {
         "language": "feature"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Cucumber Godog",
+      "properties": {
+        "cucumber-godog.program": {
+          "type": "string",
+          "default": "go",
+          "description": "The program to execute (default: go)"
+        },
+        "cucumber-godog.programArgument": {
+          "type": "string",
+          "default": "test -v .",
+          "description": "The arguments to pass to the program (default: test -v .)"
+        },
+        "cucumber-godog.programWorkingDirectory": {
+          "type": "string",
+          "default": "../",
+          "description": "The working directory for the program, relative to the feature file (default: ../)"
+        },
+        "cucumber-godog.testPatternFormat": {
+          "type": "string",
+          "default": "/${sanitizedFeatureName}/${sanitizedScenarioName}$",
+          "description": "The format of the test pattern. Available variables: ${featureName}, ${scenarioName}, ${sanitizedFeatureName}, ${sanitizedScenarioName}, ${featureFilePath}"
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "yarn run package",
