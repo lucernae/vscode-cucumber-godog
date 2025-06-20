@@ -15,6 +15,38 @@ export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
 
+	// Initialize the feature cache
+	initializeFeatureCache();
+
+	// Set up file watcher for feature files
+	const featureFileWatcher = vscode.workspace.createFileSystemWatcher('**/*.feature');
+
+	// Update cache when feature files are created
+	featureFileWatcher.onDidCreate(async (uri) => {
+		console.log(`Feature file created: ${uri.fsPath}`);
+		await updateFeatureCache();
+	});
+
+	// Update cache when feature files are changed
+	featureFileWatcher.onDidChange(async (uri) => {
+		console.log(`Feature file changed: ${uri.fsPath}`);
+		await updateFeatureCache();
+	});
+
+	// Update cache when feature files are deleted
+	featureFileWatcher.onDidDelete(async (uri) => {
+		console.log(`Feature file deleted: ${uri.fsPath}`);
+		await updateFeatureCache();
+	});
+
+	// Add the file watcher to subscriptions
+	context.subscriptions.push(featureFileWatcher);
+
+	// Register the terminal link provider
+	const terminalLinkProvider = new CucumberTerminalLinkProvider();
+	const terminalLinkProviderDisposable = vscode.window.registerTerminalLinkProvider(terminalLinkProvider);
+	context.subscriptions.push(terminalLinkProviderDisposable);
+
  	// Register the run feature command
 	const runFeatureDisposable = vscode.commands.registerCommand('cucumber-godog.runFeature', async (featureName?: string, filePath?: string) => {
 		// If featureName and filePath are provided, run the test directly
@@ -23,23 +55,20 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		// Otherwise, find all feature files and let the user select one
-		const featureFiles = await findFeatureFiles();
-		if (!featureFiles || featureFiles.length === 0) {
-			vscode.window.showInformationMessage('No feature files found in the project.');
-			return;
+		// If the feature cache is empty, initialize it
+		if (featureCache.length === 0) {
+			await initializeFeatureCache();
 		}
 
-		// Extract feature names from the files
-		const features = await extractFeatures(featureFiles);
-		if (!features || features.length === 0) {
+		// Check if we have any features in the cache
+		if (featureCache.length === 0) {
 			vscode.window.showInformationMessage('No features found in the project.');
 			return;
 		}
 
 		// Show quick pick to select a feature
 		const selectedFeature = await vscode.window.showQuickPick(
-			features.map(f => ({ 
+			featureCache.map(f => ({ 
 				label: f.name,
 				description: path.basename(f.filePath),
 				detail: f.filePath
@@ -60,23 +89,20 @@ export function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 
-		// Otherwise, find all feature files and let the user select one
-		const [featureFiles] = await Promise.all([findFeatureFiles()]);
-		if (!featureFiles || featureFiles.length === 0) {
-			vscode.window.showInformationMessage('No feature files found in the project.');
-			return;
+		// If the feature cache is empty, initialize it
+		if (featureCache.length === 0) {
+			await initializeFeatureCache();
 		}
 
-		// Extract feature names from the files
-		const [features] = await Promise.all([extractFeatures(featureFiles)]);
-		if (!features || features.length === 0) {
+		// Check if we have any features in the cache
+		if (featureCache.length === 0) {
 			vscode.window.showInformationMessage('No features found in the project.');
 			return;
 		}
 
 		// Show quick pick to select a feature
 		const selectedFeature = await vscode.window.showQuickPick(
-			features.map(f => ({
+			featureCache.map(f => ({
 				label: f.name,
 				description: path.basename(f.filePath),
 				scenarioNames: f.scenarioNames,
@@ -118,11 +144,37 @@ export function activate(context: vscode.ExtensionContext) {
 // This method is called when your extension is deactivated
 export function deactivate() {}
 
+// Global feature cache
+let featureCache: FeatureInfo[] = [];
+
 // Interface for feature information
 interface FeatureInfo {
 	name: string;
 	scenarioNames: string[];
+	scenarioLineNumbers: Map<string, number>; // Map scenario name to line number
 	filePath: string;
+	lineNumber: number; // Line number of the feature
+}
+
+// Function to initialize the feature cache
+async function initializeFeatureCache(): Promise<void> {
+	const featureFiles = await findFeatureFiles();
+	if (featureFiles.length > 0) {
+		featureCache = await extractFeatures(featureFiles);
+		console.log(`Feature cache initialized with ${featureCache.length} features`);
+	}
+}
+
+// Function to update the feature cache
+async function updateFeatureCache(): Promise<void> {
+	const featureFiles = await findFeatureFiles();
+	if (featureFiles.length > 0) {
+		featureCache = await extractFeatures(featureFiles);
+		console.log(`Feature cache updated with ${featureCache.length} features`);
+	} else {
+		featureCache = [];
+		console.log('Feature cache cleared (no feature files found)');
+	}
 }
 
 // Function to find all feature files in the workspace
@@ -158,22 +210,28 @@ async function extractFeatures(featureFiles: string[]): Promise<FeatureInfo[]> {
 			// Find the feature name using the regex pattern
 			const lines = text.split('\n');
 			let currentFeature: FeatureInfo | undefined;
-			for (const line of lines) {
+
+			for (let i = 0; i < lines.length; i++) {
+				const line = lines[i];
 				const featureMatch = line.match(FEATURE_PATTERN);
 				if (featureMatch) {
 					const featureName = featureMatch[2].trim();
 					currentFeature = {
 						name: featureName,
 						scenarioNames: [],
-						filePath: filePath
+						scenarioLineNumbers: new Map<string, number>(),
+						filePath: filePath,
+						lineNumber: i // Store the line number of the feature
 					}
 					features.push(currentFeature);
 					continue;
 				}
+
 				const scenarioMatch = line.match(SCENARIO_PATTERN) || line.match(SCENARIO_OUTLINE_PATTERN);
-				if (scenarioMatch) {
+				if (scenarioMatch && currentFeature) {
 					const scenarioName = scenarioMatch[2].trim();
-					currentFeature?.scenarioNames.push(scenarioName);
+					currentFeature.scenarioNames.push(scenarioName);
+					currentFeature.scenarioLineNumbers.set(scenarioName, i); // Store the line number of the scenario
 				}
 			}
 		} catch (error) {
@@ -186,46 +244,84 @@ async function extractFeatures(featureFiles: string[]): Promise<FeatureInfo[]> {
 
 // Code lens provider for Cucumber feature files
 class CucumberCodeLensProvider implements vscode.CodeLensProvider {
-	public provideCodeLenses(
+	public async provideCodeLenses(
 		document: vscode.TextDocument,
 		token: vscode.CancellationToken
-	): vscode.CodeLens[] | Thenable<vscode.CodeLens[]> {
+	): Promise<vscode.CodeLens[]> {
 		const codeLenses: vscode.CodeLens[] = [];
 		const filePath = document.uri.fsPath;
 
-		// Process each line in the document
-		let currentFeatureName: string | undefined;
-		for (let i = 0; i < document.lineCount; i++) {
-			const line = document.lineAt(i);
-			const text = line.text;
+		// If the feature cache is empty, initialize it
+		if (featureCache.length === 0) {
+			await initializeFeatureCache();
+		}
 
-			// Check for Feature
-			const featureMatch = text.match(FEATURE_PATTERN);
-			if (featureMatch) {
-				const featureName = featureMatch[2].trim();
-				const range = new vscode.Range(i, 0, i, text.length);
-				const runFeatureCommand = {
-					title: '▶ Run Feature',
-					command: 'cucumber-godog.runFeature',
-					arguments: [featureName, filePath]
-				};
-				currentFeatureName = featureName;
-				codeLenses.push(new vscode.CodeLens(range, runFeatureCommand));
-				continue;
+		// Find the feature in the cache that matches this document
+		const feature = featureCache.find(f => f.filePath === filePath);
+
+		// If we found a matching feature, add code lenses for it and its scenarios
+		if (feature) {
+			// Add code lens for the feature
+			const featureRange = new vscode.Range(feature.lineNumber, 0, feature.lineNumber, document.lineAt(feature.lineNumber).text.length);
+			const runFeatureCommand = {
+				title: '▶ Run Feature',
+				command: 'cucumber-godog.runFeature',
+				arguments: [feature.name, filePath]
+			};
+			codeLenses.push(new vscode.CodeLens(featureRange, runFeatureCommand));
+
+			// Add code lenses for each scenario
+			for (const scenarioName of feature.scenarioNames) {
+				const lineNumber = feature.scenarioLineNumbers.get(scenarioName);
+				if (lineNumber !== undefined) {
+					const scenarioRange = new vscode.Range(lineNumber, 0, lineNumber, document.lineAt(lineNumber).text.length);
+					const runScenarioCommand = {
+						title: '▶ Run Scenario',
+						command: 'cucumber-godog.runScenario',
+						arguments: [feature.name, scenarioName, filePath]
+					};
+					codeLenses.push(new vscode.CodeLens(scenarioRange, runScenarioCommand));
+				}
+			}
+		} else {
+			// If the feature is not in the cache, parse the document directly
+			// This is a fallback in case the cache is not up to date
+			let currentFeatureName: string | undefined;
+			for (let i = 0; i < document.lineCount; i++) {
+				const line = document.lineAt(i);
+				const text = line.text;
+
+				// Check for Feature
+				const featureMatch = text.match(FEATURE_PATTERN);
+				if (featureMatch) {
+					const featureName = featureMatch[2].trim();
+					const range = new vscode.Range(i, 0, i, text.length);
+					const runFeatureCommand = {
+						title: '▶ Run Feature',
+						command: 'cucumber-godog.runFeature',
+						arguments: [featureName, filePath]
+					};
+					currentFeatureName = featureName;
+					codeLenses.push(new vscode.CodeLens(range, runFeatureCommand));
+					continue;
+				}
+
+				// Check for Scenario or Scenario Outline
+				const scenarioMatch = text.match(SCENARIO_PATTERN) || text.match(SCENARIO_OUTLINE_PATTERN);
+				if (scenarioMatch) {
+					const scenarioName = scenarioMatch[2].trim();
+					const range = new vscode.Range(i, 0, i, text.length);
+					const runScenarioCommand = {
+						title: '▶ Run Scenario',
+						command: 'cucumber-godog.runScenario',
+						arguments: [currentFeatureName, scenarioName, filePath]
+					};
+					codeLenses.push(new vscode.CodeLens(range, runScenarioCommand));
+				}
 			}
 
-			// Check for Scenario or Scenario Outline
-			const scenarioMatch = text.match(SCENARIO_PATTERN) || text.match(SCENARIO_OUTLINE_PATTERN);
-			if (scenarioMatch) {
-				const scenarioName = scenarioMatch[2].trim();
-				const range = new vscode.Range(i, 0, i, text.length);
-				const runScenarioCommand = {
-					title: '▶ Run Scenario',
-					command: 'cucumber-godog.runScenario',
-					arguments: [currentFeatureName, scenarioName, filePath]
-				};
-				codeLenses.push(new vscode.CodeLens(range, runScenarioCommand));
-			}
+			// Update the cache with this feature file
+			await updateFeatureCache();
 		}
 
 		return codeLenses;
@@ -236,6 +332,128 @@ function sanitizeName(name: string) {
 	return name.replace(/[^a-zA-Z0-9]/g, '_');
 }
 
+// Terminal link provider for Cucumber feature files
+class CucumberTerminalLinkProvider implements vscode.TerminalLinkProvider {
+	// Regular expressions to match feature and scenario names in terminal output
+	private featureRegex = /Feature: ([^\n]+)/g;
+	private scenarioRegex = /Scenario: ([^\n]+)/g;
+	private scenarioOutlineRegex = /Scenario Outline: ([^\n]+)/g;
+
+	// Method to provide terminal links
+	async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<vscode.TerminalLink[]> {
+		const links: vscode.TerminalLink[] = [];
+		const line = context.line;
+
+		// Find feature names in the line
+		let match;
+		while ((match = this.featureRegex.exec(line)) !== null) {
+			if (token.isCancellationRequested) {
+				break;
+			}
+
+			const featureName = match[1].trim();
+			links.push(new vscode.TerminalLink(
+				match.index + 9, // "Feature: " is 9 characters
+				featureName.length,
+				`Open feature: ${featureName}`
+			));
+		}
+
+		// Reset regex lastIndex
+		this.featureRegex.lastIndex = 0;
+
+		// Find scenario names in the line
+		while ((match = this.scenarioRegex.exec(line)) !== null) {
+			if (token.isCancellationRequested) {
+				break;
+			}
+
+			const scenarioName = match[1].trim();
+			links.push(new vscode.TerminalLink(
+				match.index + 10, // "Scenario: " is 10 characters
+				scenarioName.length,
+				`Open scenario: ${scenarioName}`
+			));
+		}
+
+		// Reset regex lastIndex
+		this.scenarioRegex.lastIndex = 0;
+
+		// Find scenario outline names in the line
+		while ((match = this.scenarioOutlineRegex.exec(line)) !== null) {
+			if (token.isCancellationRequested) {
+				break;
+			}
+
+			const scenarioName = match[1].trim();
+			links.push(new vscode.TerminalLink(
+				match.index + 18, // "Scenario Outline: " is 18 characters
+				scenarioName.length,
+				`Open scenario: ${scenarioName}`
+			));
+		}
+
+		// Reset regex lastIndex
+		this.scenarioOutlineRegex.lastIndex = 0;
+
+		return links;
+	}
+
+	// Method to handle terminal links
+	async handleTerminalLink(link: vscode.TerminalLink): Promise<void> {
+		// Get the text of the link
+		const tooltip = link.tooltip || '';
+		const isFeature = tooltip.startsWith('Open feature:');
+		const isScenario = tooltip.startsWith('Open scenario:');
+
+		if (!isFeature && !isScenario) {
+			return;
+		}
+
+		// Extract the name from the tooltip
+		const name = tooltip.substring(tooltip.indexOf(':') + 1).trim();
+
+		// Find the feature or scenario in the cache
+		for (const feature of featureCache) {
+			if (isFeature && feature.name === name) {
+				// Open the feature file and navigate to the feature line
+				await this.openFeatureFile(feature.filePath, feature.lineNumber);
+				return;
+			} else if (isScenario && feature.scenarioNames.includes(name)) {
+				// Get the line number for this scenario
+				const lineNumber = feature.scenarioLineNumbers.get(name);
+				if (lineNumber !== undefined) {
+					// Open the feature file and navigate to the scenario line
+					await this.openFeatureFile(feature.filePath, lineNumber);
+					return;
+				}
+			}
+		}
+
+		// If we get here, we couldn't find the feature or scenario
+		vscode.window.showErrorMessage(`Could not find ${isFeature ? 'feature' : 'scenario'}: ${name}`);
+	}
+
+	// Method to open a feature file and navigate to a specific line
+	private async openFeatureFile(filePath: string, lineNumber: number): Promise<void> {
+		try {
+			// Open the document
+			const document = await vscode.workspace.openTextDocument(filePath);
+			const editor = await vscode.window.showTextDocument(document);
+
+			// Navigate to the line
+			if (lineNumber >= 0) {
+				const range = new vscode.Range(lineNumber, 0, lineNumber, 0);
+				editor.revealRange(range, vscode.TextEditorRevealType.InCenter);
+				editor.selection = new vscode.Selection(lineNumber, 0, lineNumber, 0);
+			}
+		} catch (error) {
+			console.error(`Error opening feature file: ${error}`);
+			vscode.window.showErrorMessage(`Error opening feature file: ${error}`);
+		}
+	}
+}
+
 // Function to run the test with godog
 function runTest(filePath: string, featureName?: string, scenarioName?: string) {
 	// Create output channel if it doesn't exist
@@ -243,7 +461,6 @@ function runTest(filePath: string, featureName?: string, scenarioName?: string) 
 
 	// Get the directory containing the feature file
 	const dirPath = path.dirname(filePath);
-	outputChannel.appendLine(`top level file: ${path.join(dirPath, '../')}`);
 	const goSourcePath = path.join(dirPath, '../');
 
 	// Build the go test command
