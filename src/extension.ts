@@ -262,17 +262,31 @@ function runTest(filePath: string, featureName?: string, scenarioName?: string) 
 
 	outputChannel.appendLine(`Running: ${command} in ${dirPath}`);
 
-	// Create a terminal for running the tests with environment variables to force color output
-	const terminal = vscode.window.createTerminal({
-		name: `Cucumber Godog: ${testPattern ? testPattern : 'All'}`,
-		cwd: goSourcePath,
-		env: {
-			FORCE_COLOR: '1',
-			COLORTERM: 'truecolor',
-			TERM: 'xterm-256color',
-			GO_TEST_COLOR: '1'  // Specific to Go tests
+	// Terminal name
+	const terminalName = `Cucumber Godog: ${testPattern ? testPattern : 'All'}`;
+
+	// Check if a terminal with this name already exists
+	let terminal: vscode.Terminal | undefined;
+	for (const existingTerminal of vscode.window.terminals) {
+		if (existingTerminal.name === terminalName) {
+			terminal = existingTerminal;
+			break;
 		}
-	});
+	}
+
+	// If no existing terminal was found, create a new one
+	if (!terminal) {
+		terminal = vscode.window.createTerminal({
+			name: terminalName,
+			cwd: goSourcePath,
+			env: {
+				FORCE_COLOR: '1',
+				COLORTERM: 'truecolor',
+				TERM: 'xterm-256color',
+				GO_TEST_COLOR: '1'  // Specific to Go tests
+			}
+		});
+	}
 
 	// Show the terminal and run the command
 	terminal.show();
