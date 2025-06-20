@@ -338,14 +338,36 @@ class CucumberTerminalLinkProvider implements vscode.TerminalLinkProvider {
 	private featureRegex = /Feature: ([^\n]+)/g;
 	private scenarioRegex = /Scenario: ([^\n]+)/g;
 	private scenarioOutlineRegex = /Scenario Outline: ([^\n]+)/g;
+	// Regular expression to match scenario with line number information
+	private scenarioWithLineRegex = /\s*Scenario: ([^\n#]+)\s+# ([^:]+):(\d+)/g;
 
 	// Method to provide terminal links
 	async provideTerminalLinks(context: vscode.TerminalLinkContext, token: vscode.CancellationToken): Promise<vscode.TerminalLink[]> {
 		const links: vscode.TerminalLink[] = [];
 		const line = context.line;
 
-		// Find feature names in the line
+		// Find scenario with line number information first (most specific)
 		let match;
+		while ((match = this.scenarioWithLineRegex.exec(line)) !== null) {
+			if (token.isCancellationRequested) {
+				break;
+			}
+
+			const scenarioName = match[1].trim();
+			const featureName = match[2].trim();
+			const lineNumber = parseInt(match[3], 10);
+
+			links.push(new vscode.TerminalLink(
+				line.indexOf(scenarioName),
+				scenarioName.length,
+				`Open scenario: ${featureName}/${scenarioName}:${lineNumber}`
+			));
+		}
+
+		// Reset regex lastIndex
+		this.scenarioWithLineRegex.lastIndex = 0;
+
+		// Find feature names in the line
 		while ((match = this.featureRegex.exec(line)) !== null) {
 			if (token.isCancellationRequested) {
 				break;
@@ -362,9 +384,10 @@ class CucumberTerminalLinkProvider implements vscode.TerminalLinkProvider {
 		// Reset regex lastIndex
 		this.featureRegex.lastIndex = 0;
 
-		// Find scenario names in the line
+		// Find scenario names in the line (without line number information)
 		while ((match = this.scenarioRegex.exec(line)) !== null) {
-			if (token.isCancellationRequested) {
+			// Skip if this scenario was already matched with line number information
+			if (token.isCancellationRequested || this.scenarioWithLineRegex.test(line)) {
 				break;
 			}
 
@@ -410,8 +433,52 @@ class CucumberTerminalLinkProvider implements vscode.TerminalLinkProvider {
 			return;
 		}
 
-		// Extract the name from the tooltip
-		const name = tooltip.substring(tooltip.indexOf(':') + 1).trim();
+		// Extract information from the tooltip
+		const tooltipContent = tooltip.substring(tooltip.indexOf(':') + 1).trim();
+
+		// Check if this is a scenario with line number information
+		if (isScenario && tooltipContent.includes('/')) {
+			// Format is "featureName/scenarioName:lineNumber"
+			const parts = tooltipContent.split('/');
+			if (parts.length === 2) {
+				const scenarioName = parts[1];
+				const featureName = parts[0];
+				const scenarioLineNumber = scenarioName.split(':')[1];
+				// subtract 1 because line numbers in the cache is 0-based, but the godog output shows 1-based
+				const lineNumber = parseInt(scenarioLineNumber, 10)-1;
+
+				// Find the feature file by name
+				for (const feature of featureCache) {
+					if (feature.name === featureName) {
+						// Open the feature file and navigate directly to the specified line
+						await this.openFeatureFile(feature.filePath, lineNumber);
+						return;
+					}
+				}
+
+				// If feature not found in cache, try to find it by name in all feature files
+				const featureFiles = await findFeatureFiles();
+				for (const filePath of featureFiles) {
+					try {
+						const document = await vscode.workspace.openTextDocument(filePath);
+						const text = document.getText();
+						if (text.includes(`Feature: ${featureName}`)) {
+							// Open the file and navigate to the specified line
+							await this.openFeatureFile(filePath, lineNumber);
+							return;
+						}
+					} catch (error) {
+						console.error(`Error reading feature file ${filePath}:`, error);
+					}
+				}
+
+				vscode.window.showErrorMessage(`Could not find feature file for: ${featureName}`);
+				return;
+			}
+		}
+
+		// Handle regular feature or scenario links (without line number information)
+		const name = tooltipContent;
 
 		// Find the feature or scenario in the cache
 		for (const feature of featureCache) {
