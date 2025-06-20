@@ -101,7 +101,7 @@ suite('Extension Test Suite', () => {
 		assert.ok(registerCodeLensProviderStub.firstCall.args[1] instanceof CucumberCodeLensProvider);
 		
 		// Verify context subscriptions were added
-		assert.strictEqual(contextMock.subscriptions.length, 3);
+		assert.strictEqual(contextMock.subscriptions.length, 5);
 	});
 
 	test('runFeature command should run test directly if feature name and file path are provided', async () => {

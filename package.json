@@ -3,6 +3,7 @@
   "displayName": "cucumber-godog",
   "description": "cucumber runner for godog",
   "version": "0.0.1",
+  "license": "MIT",
   "engines": {
     "vscode": "^1.101.0"
   },

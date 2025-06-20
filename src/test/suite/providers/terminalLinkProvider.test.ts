@@ -118,7 +118,7 @@ suite('TerminalLinkProvider Test Suite', () => {
 	});
 
 	test('handleTerminalLink should open feature file for feature links', async () => {
-		const link = new vscode.TerminalLink(0, 0, `Open feature: ${mockFeatureName1}`);
+		const link = new vscode.TerminalLink(0, mockFeatureName1.length, `Open feature: ${mockFeatureName1}`);
 		
 		await provider.handleTerminalLink(link);
 		
@@ -139,7 +139,7 @@ suite('TerminalLinkProvider Test Suite', () => {
 	});
 
 	test('handleTerminalLink should open feature file for scenario links', async () => {
-		const link = new vscode.TerminalLink(0, 0, `Open scenario: ${mockScenarioName1}`);
+		const link = new vscode.TerminalLink(0, mockScenarioName1.length, `Open scenario: ${mockScenarioName1}`);
 		
 		await provider.handleTerminalLink(link);
 		
@@ -160,7 +160,7 @@ suite('TerminalLinkProvider Test Suite', () => {
 	});
 
 	test('handleTerminalLink should open feature file for scenario links with line numbers', async () => {
-		const link = new vscode.TerminalLink(0, 0, `Open scenario: ${mockFeatureName1}/${mockScenarioName1}:6`);
+		const link = new vscode.TerminalLink(0, mockScenarioName1.length, `Open scenario: ${mockFeatureName1}/${mockScenarioName1}:6`);
 		
 		await provider.handleTerminalLink(link);
 		
@@ -181,7 +181,7 @@ suite('TerminalLinkProvider Test Suite', () => {
 	});
 
 	test('handleTerminalLink should show error message if feature not found', async () => {
-		const link = new vscode.TerminalLink(0, 0, `Open feature: Unknown Feature`);
+		const link = new vscode.TerminalLink(0, 'Unknown Feature'.length, `Open feature: Unknown Feature`);
 		const showErrorMessageStub = sandbox.stub(vscode.window, 'showErrorMessage');
 		
 		await provider.handleTerminalLink(link);
