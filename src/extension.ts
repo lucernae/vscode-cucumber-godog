@@ -14,21 +14,90 @@ const SCENARIO_OUTLINE_PATTERN = /^\s*(Scenario Outline:)\s*(.*)$/;
 export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "cucumber-godog" is now active!');
 
-	// Register the hello world command (keeping it for reference)
-	const helloWorldDisposable = vscode.commands.registerCommand('cucumber-godog.helloWorld', () => {
-		vscode.window.showInformationMessage('Hello World from cucumber-godog!');
-	});
+ 	// Register the run feature command
+	const runFeatureDisposable = vscode.commands.registerCommand('cucumber-godog.runFeature', async (featureName?: string, filePath?: string) => {
+		// If featureName and filePath are provided, run the test directly
+		if (featureName && filePath) {
+			runTest(filePath, featureName);
+			return;
+		}
 
-	// Register the run feature command
-	const runFeatureDisposable = vscode.commands.registerCommand('cucumber-godog.runFeature', (featureName: string, filePath: string) => {
-		runTest(filePath, featureName);
+		// Otherwise, find all feature files and let the user select one
+		const featureFiles = await findFeatureFiles();
+		if (!featureFiles || featureFiles.length === 0) {
+			vscode.window.showInformationMessage('No feature files found in the project.');
+			return;
+		}
+
+		// Extract feature names from the files
+		const features = await extractFeatures(featureFiles);
+		if (!features || features.length === 0) {
+			vscode.window.showInformationMessage('No features found in the project.');
+			return;
+		}
+
+		// Show quick pick to select a feature
+		const selectedFeature = await vscode.window.showQuickPick(
+			features.map(f => ({ 
+				label: f.name,
+				description: path.basename(f.filePath),
+				detail: f.filePath
+			})),
+			{ placeHolder: 'Select a feature to run' }
+		);
+
+		if (selectedFeature) {
+			runTest(selectedFeature.detail, selectedFeature.label);
+		}
 	});
 
 	// Register the run scenario command
-	const runScenarioDisposable = vscode.commands.registerCommand('cucumber-godog.runScenario', (featureName: string, scenarioName: string, filePath: string) => {
-		runTest(filePath, featureName, scenarioName);
+	const runScenarioDisposable = vscode.commands.registerCommand('cucumber-godog.runScenario', async (featureName?: string, scenarioName?: string, filePath?: string) => {
+		// If featureName and filePath are provided, run the test directly
+		if (featureName && scenarioName && filePath) {
+			runTest(filePath, featureName, scenarioName);
+			return;
+		}
+
+		// Otherwise, find all feature files and let the user select one
+		const [featureFiles] = await Promise.all([findFeatureFiles()]);
+		if (!featureFiles || featureFiles.length === 0) {
+			vscode.window.showInformationMessage('No feature files found in the project.');
+			return;
+		}
+
+		// Extract feature names from the files
+		const [features] = await Promise.all([extractFeatures(featureFiles)]);
+		if (!features || features.length === 0) {
+			vscode.window.showInformationMessage('No features found in the project.');
+			return;
+		}
+
+		// Show quick pick to select a feature
+		const selectedFeature = await vscode.window.showQuickPick(
+			features.map(f => ({
+				label: f.name,
+				description: path.basename(f.filePath),
+				scenarioNames: f.scenarioNames,
+				detail: f.filePath
+			})),
+			{ placeHolder: 'Select a feature to run' }
+		);
+
+		if (!selectedFeature) {
+			vscode.window.showInformationMessage('No feature selected. Please select a feature to run a scenario.');
+			return
+		}
+
+		const selectedScenario = await vscode.window.showQuickPick(
+			selectedFeature.scenarioNames.map(s => ({ label: s})),
+			{ placeHolder: 'Select a scenario to run' }
+		);
+
+		if (selectedScenario) {
+			runTest(selectedFeature.detail, selectedFeature.label, selectedScenario.label);
+		}
 	});
 
 	// Register the code lens provider
@@ -40,7 +109,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Add all disposables to the context subscriptions
 	context.subscriptions.push(
-		helloWorldDisposable,
 		runFeatureDisposable,
 		runScenarioDisposable,
 		codeLensProviderDisposable
@@ -49,6 +117,72 @@ export function activate(context: vscode.ExtensionContext) {
 
 // This method is called when your extension is deactivated
 export function deactivate() {}
+
+// Interface for feature information
+interface FeatureInfo {
+	name: string;
+	scenarioNames: string[];
+	filePath: string;
+}
+
+// Function to find all feature files in the workspace
+async function findFeatureFiles(): Promise<string[]> {
+	const featureFiles: string[] = [];
+
+	// Get all workspace folders
+	if (!vscode.workspace.workspaceFolders) {
+		return featureFiles;
+	}
+
+	// Search for all .feature files in the workspace
+	const featureFilesUris = await vscode.workspace.findFiles('**/*.feature', '**/node_modules/**');
+
+	// Convert URIs to file paths
+	for (const uri of featureFilesUris) {
+		featureFiles.push(uri.fsPath);
+	}
+
+	return featureFiles;
+}
+
+// Function to extract feature names from feature files
+async function extractFeatures(featureFiles: string[]): Promise<FeatureInfo[]> {
+	const features: FeatureInfo[] = [];
+
+	for (const filePath of featureFiles) {
+		try {
+			// Read the file content
+			const document = await vscode.workspace.openTextDocument(filePath);
+			const text = document.getText();
+
+			// Find the feature name using the regex pattern
+			const lines = text.split('\n');
+			let currentFeature: FeatureInfo | undefined;
+			for (const line of lines) {
+				const featureMatch = line.match(FEATURE_PATTERN);
+				if (featureMatch) {
+					const featureName = featureMatch[2].trim();
+					currentFeature = {
+						name: featureName,
+						scenarioNames: [],
+						filePath: filePath
+					}
+					features.push(currentFeature);
+					continue;
+				}
+				const scenarioMatch = line.match(SCENARIO_PATTERN) || line.match(SCENARIO_OUTLINE_PATTERN);
+				if (scenarioMatch) {
+					const scenarioName = scenarioMatch[2].trim();
+					currentFeature?.scenarioNames.push(scenarioName);
+				}
+			}
+		} catch (error) {
+			console.error(`Error reading feature file ${filePath}:`, error);
+		}
+	}
+
+	return features;
+}
 
 // Code lens provider for Cucumber feature files
 class CucumberCodeLensProvider implements vscode.CodeLensProvider {
@@ -104,27 +238,34 @@ function sanitizeName(name: string) {
 
 // Function to run the test with godog
 function runTest(filePath: string, featureName?: string, scenarioName?: string) {
+	// Create output channel if it doesn't exist
+	let outputChannel = vscode.window.createOutputChannel('Cucumber Godog');
+
 	// Get the directory containing the feature file
 	const dirPath = path.dirname(filePath);
+	outputChannel.appendLine(`top level file: ${path.join(dirPath, '../')}`);
+	const goSourcePath = path.join(dirPath, '../');
 
 	// Build the go test command
 	let testPattern = '';
 	if (featureName && scenarioName) {
-		testPattern = `/${sanitizeName(featureName)}/${sanitizeName(scenarioName)}/`;
+		testPattern = `/${sanitizeName(featureName)}/${sanitizeName(scenarioName)}$`;
 	}
 	else if (scenarioName) {
-		testPattern = `//${sanitizeName(scenarioName)}/`;
+		testPattern = `//${sanitizeName(scenarioName)}$`;
 	} else if (featureName) {
 		testPattern = `/${sanitizeName(featureName)}/`;
 	}
 
 	// Force color output with environment variables and flags
-	const command = `go test -v ../. ${testPattern ? `-run ${testPattern}` : ''}`;
+	const command = `go test -v . ${testPattern ? `-run ${testPattern}` : ''}`;
+
+	outputChannel.appendLine(`Running: ${command} in ${dirPath}`);
 
 	// Create a terminal for running the tests with environment variables to force color output
 	const terminal = vscode.window.createTerminal({
-		name: 'Cucumber Godog',
-		cwd: dirPath,
+		name: `Cucumber Godog: ${testPattern ? testPattern : 'All'}`,
+		cwd: goSourcePath,
 		env: {
 			FORCE_COLOR: '1',
 			COLORTERM: 'truecolor',
