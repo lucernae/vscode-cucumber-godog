@@ -1,0 +1,105 @@
+{
+  "name": "Gherkin",
+  "scopeName": "text.gherkin.feature",
+  "fileTypes": ["feature"],
+  "patterns": [
+    {
+      "include": "#feature"
+    },
+    {
+      "include": "#scenario"
+    },
+    {
+      "include": "#scenario_outline"
+    },
+    {
+      "include": "#background"
+    },
+    {
+      "include": "#examples"
+    },
+    {
+      "include": "#step"
+    },
+    {
+      "include": "#table"
+    },
+    {
+      "include": "#comment"
+    },
+    {
+      "include": "#string"
+    },
+    {
+      "include": "#tag"
+    }
+  ],
+  "repository": {
+    "feature": {
+      "match": "^\\s*(Feature:)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.feature.gherkin" },
+        "2": { "name": "entity.name.feature.gherkin" }
+      }
+    },
+    "scenario": {
+      "match": "^\\s*(Scenario:)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.scenario.gherkin" },
+        "2": { "name": "entity.name.scenario.gherkin" }
+      }
+    },
+    "scenario_outline": {
+      "match": "^\\s*(Scenario Outline:)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.scenario_outline.gherkin" },
+        "2": { "name": "entity.name.scenario_outline.gherkin" }
+      }
+    },
+    "background": {
+      "match": "^\\s*(Background:)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.background.gherkin" },
+        "2": { "name": "entity.name.background.gherkin" }
+      }
+    },
+    "examples": {
+      "match": "^\\s*(Examples:)(.*)$",
+      "captures": {
+        "1": { "name": "keyword.control.examples.gherkin" },
+        "2": { "name": "entity.name.examples.gherkin" }
+      }
+    },
+    "step": {
+      "match": "^\\s*(Given|When|Then|And|But)\\s+(.+)$",
+      "captures": {
+        "1": { "name": "keyword.control.step.gherkin" },
+        "2": { "name": "string.unquoted.step.gherkin" }
+      }
+    },
+    "table": {
+      "begin": "^\\s*\\|",
+      "end": "\\|\\s*$",
+      "patterns": [
+        {
+          "match": "\\|",
+          "name": "keyword.control.table.cell.gherkin"
+        }
+      ]
+    },
+    "comment": {
+      "match": "^\\s*(#.*)$",
+      "captures": {
+        "1": { "name": "comment.line.number-sign.gherkin" }
+      }
+    },
+    "string": {
+      "match": "\"([^\"\\\\]|\\\\.)*\"",
+      "name": "string.quoted.double.gherkin"
+    },
+    "tag": {
+      "match": "@[\\w-]+",
+      "name": "entity.name.tag.gherkin"
+    }
+  }
+}

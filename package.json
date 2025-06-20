@@ -9,13 +9,43 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:feature"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "cucumber-godog.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "cucumber-godog.runFeature",
+        "title": "Cucumber: Run Feature"
+      },
+      {
+        "command": "cucumber-godog.runScenario",
+        "title": "Cucumber: Run Scenario"
+      }
+    ],
+    "languages": [
+      {
+        "id": "feature",
+        "aliases": ["Gherkin", "Cucumber"],
+        "extensions": [".feature"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "feature",
+        "scopeName": "text.gherkin.feature",
+        "path": "./syntaxes/feature.tmLanguage.json"
+      }
+    ],
+    "codeLens": [
+      {
+        "language": "feature"
       }
     ]
   },

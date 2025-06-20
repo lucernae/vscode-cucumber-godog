@@ -1,71 +1,62 @@
-# cucumber-godog README
+# Cucumber Godog Extension for VS Code
 
-This is the README for your extension "cucumber-godog". After writing up a brief description, we recommend including the following sections.
+This extension provides support for Cucumber/Gherkin `.feature` files and integrates with Go's Godog BDD testing framework.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Syntax Highlighting**: Full syntax highlighting for Gherkin/Cucumber `.feature` files
+- **Run Tests Directly from Feature Files**: Run buttons appear next to Feature and Scenario definitions
+- **Command Palette Integration**: Run tests for specific features or scenarios from the command palette
 
-For example if there is an image subfolder under your extension project workspace:
+### Run Tests from Feature Files
 
-\!\[feature X\]\(images/feature-x.png\)
+The extension adds run buttons directly in your `.feature` files:
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- Click the "▶ Run Feature" button next to a Feature definition to run all scenarios in that feature
+- Click the "▶ Run Scenario" button next to a Scenario or Scenario Outline definition to run just that scenario
+
+![Run Feature and Scenario buttons](images/run-buttons.png)
+
+### Command Palette Commands
+
+The extension adds the following commands to the VS Code command palette:
+
+- **Cucumber: Run Feature** - Run the current feature file
+- **Cucumber: Run Scenario** - Run the scenario at the current cursor position
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- Visual Studio Code v1.101.0 or higher
+- Go installed on your system
+- Godog tests in your project
 
-## Extension Settings
+## How It Works
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+When you run a feature or scenario:
 
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+1. The extension executes `go test` in the directory containing the feature file
+2. It passes the appropriate test pattern to run just the selected feature or scenario
+3. Test output is displayed in the "Cucumber Godog" output channel
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- The extension assumes that your Go tests are set up to run Godog tests with the standard naming patterns
+- Test patterns are based on the feature and scenario names, which must match the test names in your Go code
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+Initial release with:
+- Syntax highlighting for `.feature` files
+- Run buttons for features and scenarios
+- Command palette integration
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
 ## For more information
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
+* [Godog GitHub Repository](https://github.com/cucumber/godog)
+* [Cucumber Documentation](https://cucumber.io/docs/cucumber/)
 
 **Enjoy!**
