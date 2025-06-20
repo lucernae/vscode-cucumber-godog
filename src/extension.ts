@@ -118,31 +118,22 @@ function runTest(filePath: string, featureName?: string, scenarioName?: string) 
 		testPattern = `/${sanitizeName(featureName)}/`;
 	}
 
+	// Force color output with environment variables and flags
 	const command = `go test -v ../. ${testPattern ? `-run ${testPattern}` : ''}`;
 
-	// Create output channel if it doesn't exist
-	let outputChannel = vscode.window.createOutputChannel('Cucumber Godog');
-	outputChannel.show();
-	outputChannel.appendLine(`Running: ${command} in ${dirPath}`);
-
-	// Execute the command
-	const process = cp.exec(command, { cwd: dirPath });
-
-	// Handle output
-	process.stdout?.on('data', (data) => {
-		outputChannel.append(data.toString());
-	});
-
-	process.stderr?.on('data', (data) => {
-		outputChannel.append(data.toString());
-	});
-
-	// Handle process completion
-	process.on('close', (code) => {
-		if (code === 0) {
-			outputChannel.appendLine('\nTests completed successfully.');
-		} else {
-			outputChannel.appendLine(`\nTests failed with exit code ${code}.`);
+	// Create a terminal for running the tests with environment variables to force color output
+	const terminal = vscode.window.createTerminal({
+		name: 'Cucumber Godog',
+		cwd: dirPath,
+		env: {
+			FORCE_COLOR: '1',
+			COLORTERM: 'truecolor',
+			TERM: 'xterm-256color',
+			GO_TEST_COLOR: '1'  // Specific to Go tests
 		}
 	});
+
+	// Show the terminal and run the command
+	terminal.show();
+	terminal.sendText(command);
 }
