@@ -1,0 +1,51 @@
+{
+  "name": "vscode-cucumber-godog",
+  "displayName": "Cucumber Godog",
+  "version": "1.0.0",
+  "description": "VS Code extension for Cucumber Godog testing framework",
+  "publisher": "lucernae",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Testing",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:go",
+    "onLanguage:feature"
+  ],
+  "main": "./dist/index.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cucumber-godog.runTest",
+        "title": "Run Godog Test"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "tsc",
+    "watch": "tsc -watch",
+    "lint": "eslint src --ext ts",
+    "test": "node ./dist/test/runTest.js"
+  },
+  "dependencies": {
+    "vscode": "^1.1.37"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.2.5",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.8",
+    "@typescript-eslint/parser": "^5.59.8",
+    "@vscode/test-electron": "^2.3.8",
+    "eslint": "^8.41.0",
+    "glob": "^8.1.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.5.3"
+  },
+  "private": true
+}
