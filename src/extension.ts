@@ -14,8 +14,6 @@ import {
 import {runTest} from './services/testService';
 
 
-let testControllerProvider: CucumberTestControllerProvider;
-
 /**
  * This method is called when your extension is activated
  * Your extension is activated the very first time the command is executed
@@ -138,10 +136,8 @@ export function activate(context: vscode.ExtensionContext) {
 		codeLensProvider
 	);
 
-	// Initialize the test controller provider
-	if( testControllerProvider === undefined) {
-		testControllerProvider = new CucumberTestControllerProvider(context);
-	}
+	// Initialize the test controller provider using the getInstance method
+	const testControllerProvider = CucumberTestControllerProvider.getInstance(context);
 
 	// Add all disposables to the context subscriptions
 	context.subscriptions.push(

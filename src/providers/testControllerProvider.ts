@@ -8,13 +8,50 @@ import { runTest } from '../services/testService';
  * Test controller provider for Cucumber feature files
  */
 export class CucumberTestControllerProvider {
+    private static readonly CONTROLLER_ID = 'cucumber-godog-test-controller';
+    private static readonly CONTROLLER_LABEL = 'Cucumber Godog Tests';
+    private static instances: Map<string, CucumberTestControllerProvider> = new Map();
+
     private testController: vscode.TestController;
     private testItems: Map<string, vscode.TestItem> = new Map();
     private disposables: vscode.Disposable[] = [];
 
+    /**
+     * Gets an existing instance of the test controller provider with the given ID,
+     * or creates a new one if it doesn't exist
+     * @param id The ID of the test controller
+     * @returns The test controller provider instance
+     */
+    public static getInstance(context: vscode.ExtensionContext): CucumberTestControllerProvider {
+        const id = this.CONTROLLER_ID;
+        let instance = this.instances.get(id);
+
+        if (instance) {
+            // If an instance already exists, dispose it before creating a new one
+            instance.dispose();
+        }
+
+        // Create a new instance
+        instance = new CucumberTestControllerProvider(context);
+        this.instances.set(id, instance);
+
+        return instance;
+    }
+
     constructor(context: vscode.ExtensionContext) {
+        // Check if a controller with this ID already exists
+        const existingInstance = CucumberTestControllerProvider.instances.get(CucumberTestControllerProvider.CONTROLLER_ID);
+        if (existingInstance) {
+            // If an instance already exists, dispose it
+            existingInstance.dispose();
+            CucumberTestControllerProvider.instances.delete(CucumberTestControllerProvider.CONTROLLER_ID);
+        }
+
         // Create the test controller
-        this.testController = vscode.tests.createTestController('cucumber-godog-test-controller', 'Cucumber Godog Tests');
+        this.testController = vscode.tests.createTestController(
+            CucumberTestControllerProvider.CONTROLLER_ID, 
+            CucumberTestControllerProvider.CONTROLLER_LABEL
+        );
         context.subscriptions.push(this.testController);
 
         // Set the resolve handler to load test items on demand
@@ -39,6 +76,9 @@ export class CucumberTestControllerProvider {
 
         // Initial load of tests
         this.loadTests();
+
+        // Register this instance
+        CucumberTestControllerProvider.instances.set(CucumberTestControllerProvider.CONTROLLER_ID, this);
     }
 
     /**
@@ -54,7 +94,7 @@ export class CucumberTestControllerProvider {
      */
     private async updateTests(): Promise<void> {
         await updateFeatureCache();
-        
+
         // Clear existing test items
         this.testController.items.replace([]);
         this.testItems.clear();
@@ -67,7 +107,7 @@ export class CucumberTestControllerProvider {
                 feature.name,
                 featureUri
             );
-            
+
             // Set the feature location
             featureItem.range = new vscode.Range(
                 new vscode.Position(feature.lineNumber, 0),
@@ -87,7 +127,7 @@ export class CucumberTestControllerProvider {
                         scenarioName,
                         featureUri
                     );
-                    
+
                     // Set the scenario location
                     scenarioItem.range = new vscode.Range(
                         new vscode.Position(lineNumber, 0),
@@ -145,14 +185,14 @@ export class CucumberTestControllerProvider {
 
             // Run the test
             run.started(item);
-            
+
             try {
                 // Extract feature and scenario information from the test item ID
                 const parts = item.id.split(':');
                 const type = parts[0];
                 const filePath = parts[1];
                 const featureName = parts[2];
-                
+
                 if (type === 'feature') {
                     // Run the feature
                     runTest(filePath, featureName);

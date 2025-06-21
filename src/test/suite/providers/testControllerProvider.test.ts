@@ -29,6 +29,10 @@ suite('TestControllerProvider Test Suite', () => {
     setup(() => {
         sandbox = sinon.createSandbox();
 
+        // Reset the static instances map before each test
+        // Use any type assertion to access private static property
+        (CucumberTestControllerProvider as any).instances = new Map();
+
         // Create feature cache stub
         featureCacheStub = sandbox.stub(featureService, 'featureCache').value([
             {
@@ -102,6 +106,10 @@ suite('TestControllerProvider Test Suite', () => {
         contextMock = {
             subscriptions: []
         };
+
+        // Stub VS Code API
+        sandbox.stub(vscode.tests, 'createTestController').returns(testControllerMock);
+        sandbox.stub(vscode.workspace, 'createFileSystemWatcher').returns(fileWatcherMock);
 
         // Create test controller provider instance
         testControllerProvider = new CucumberTestControllerProvider(contextMock);
@@ -241,5 +249,54 @@ suite('TestControllerProvider Test Suite', () => {
 
         // Verify test controller was disposed
         assert.strictEqual(testControllerMock.dispose.calledOnce, true);
+    });
+
+    test('getInstance should return a singleton instance', () => {
+        // Get an instance using getInstance
+        const instance1 = CucumberTestControllerProvider.getInstance(contextMock);
+
+        // Verify the instance is the same as the one created in setup
+        assert.strictEqual(instance1, testControllerProvider);
+
+        // Get another instance
+        const instance2 = CucumberTestControllerProvider.getInstance(contextMock);
+
+        // Verify both instances are the same
+        assert.strictEqual(instance1, instance2);
+    });
+
+    test('getInstance should dispose existing instance before creating a new one', () => {
+        // Get the first instance
+        const instance1 = CucumberTestControllerProvider.getInstance(contextMock);
+
+        // Create a spy on the dispose method
+        const disposeSpy = sandbox.spy(instance1, 'dispose');
+
+        // Reset the createTestController stub to return a new mock
+        const newTestControllerMock = { ...testControllerMock };
+        (vscode.tests.createTestController as sinon.SinonStub).returns(newTestControllerMock);
+
+        // Get a new instance
+        const instance2 = CucumberTestControllerProvider.getInstance(contextMock);
+
+        // Verify dispose was called on the first instance
+        assert.strictEqual(disposeSpy.calledOnce, true);
+
+        // Verify the instances are different
+        assert.notStrictEqual(instance1, instance2);
+    });
+
+    test('constructor should dispose existing instance with same ID', () => {
+        // Create a spy on the dispose method
+        const disposeSpy = sandbox.spy(testControllerProvider, 'dispose');
+
+        // Create a new instance directly
+        const newInstance = new CucumberTestControllerProvider(contextMock);
+
+        // Verify dispose was called on the first instance
+        assert.strictEqual(disposeSpy.calledOnce, true);
+
+        // Verify the instances are different
+        assert.notStrictEqual(testControllerProvider, newInstance);
     });
 });
