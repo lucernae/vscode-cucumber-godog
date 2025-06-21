@@ -10,12 +10,22 @@ This extension provides support for Cucumber/Gherkin `.feature` files and integr
 
 ### Run Tests from Feature Files
 
-The extension adds run buttons directly in your `.feature` files:
+The extension provides multiple ways to run tests directly from your `.feature` files:
 
-- Click the "▶ Run Feature" button next to a Feature definition to run all scenarios in that feature
-- Click the "▶ Run Scenario" button next to a Scenario or Scenario Outline definition to run just that scenario
+#### CodeLens Buttons
+- Click the "▶ Run Feature" button above a Feature definition to run all scenarios in that feature
+- Click the "▶ Run Scenario" button above a Scenario or Scenario Outline definition to run just that scenario
 
 ![Run Feature and Scenario buttons](images/run-buttons.png)
+
+#### Gutter Icons
+- Click the run icon in the gutter (next to the line number) to run a feature or scenario
+- These icons appear next to Feature and Scenario definitions
+
+#### Test Explorer
+- Use VS Code's built-in Test Explorer to view and run your Cucumber tests
+- Features and scenarios appear in a hierarchical tree view
+- Run individual scenarios or entire features with a single click
 
 ### Command Palette Commands
 
@@ -80,6 +90,12 @@ Example: `"cucumber-godog.testPatternFormat": "^${sanitizedFeatureName}_${saniti
 - Test patterns are based on the feature and scenario names, which must match the test names in your Go code
 
 ## Release Notes
+
+### 0.0.3
+
+- Added gutter icons for running features and scenarios
+- Integrated with VS Code's Test Explorer
+- Improved test discovery and execution
 
 ### 0.0.2
 

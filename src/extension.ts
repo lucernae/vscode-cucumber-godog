@@ -2,10 +2,19 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { CucumberCodeLensProvider } from './providers/codeLensProvider';
-import { CucumberTerminalLinkProvider } from './providers/terminalLinkProvider';
-import { initializeFeatureCache, updateFeatureCache, ensureFeatureCacheInitialized, featureCache } from './services/featureService';
-import { runTest } from './services/testService';
+import {CucumberCodeLensProvider} from './providers/codeLensProvider';
+import {CucumberTerminalLinkProvider} from './providers/terminalLinkProvider';
+import {CucumberTestControllerProvider} from './providers/testControllerProvider';
+import {
+	ensureFeatureCacheInitialized,
+	featureCache,
+	initializeFeatureCache,
+	updateFeatureCache,
+} from './services/featureService';
+import {runTest} from './services/testService';
+
+
+let testControllerProvider: CucumberTestControllerProvider;
 
 /**
  * This method is called when your extension is activated
@@ -129,11 +138,17 @@ export function activate(context: vscode.ExtensionContext) {
 		codeLensProvider
 	);
 
+	// Initialize the test controller provider
+	if( testControllerProvider === undefined) {
+		testControllerProvider = new CucumberTestControllerProvider(context);
+	}
+
 	// Add all disposables to the context subscriptions
 	context.subscriptions.push(
 		runFeatureDisposable,
 		runScenarioDisposable,
-		codeLensProviderDisposable
+		codeLensProviderDisposable,
+		{ dispose: () => testControllerProvider.dispose() }
 	);
 }
 

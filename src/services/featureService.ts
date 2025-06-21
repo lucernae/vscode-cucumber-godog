@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { FeatureInfo } from '../models/featureInfo';
 import { FEATURE_PATTERN, SCENARIO_PATTERN, SCENARIO_OUTLINE_PATTERN } from '../utils/constants';
+import {CucumberTestControllerProvider} from "../providers/testControllerProvider";
 
 // Global feature cache
 export let featureCache: FeatureInfo[] = [];
