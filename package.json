@@ -7,6 +7,7 @@
   "repository": {
     "url": "https://github.com/lucernae/vscode-cucumber-godog"
   },
+  "publisher": "lucernae",
   "engines": {
     "vscode": "^1.96.0"
   },

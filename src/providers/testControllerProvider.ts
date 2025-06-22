@@ -27,8 +27,8 @@ export class CucumberTestControllerProvider {
         let instance = this.instances.get(id);
 
         if (instance) {
-            // If an instance already exists, dispose it before creating a new one
-            instance.dispose();
+            // if it already exists, just return immediately
+            return instance
         }
 
         // Create a new instance

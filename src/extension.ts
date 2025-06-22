@@ -137,7 +137,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Initialize the test controller provider using the getInstance method
-	const testControllerProvider = CucumberTestControllerProvider.getInstance(context);
+	const testControllerProvider = new CucumberTestControllerProvider(context);
 
 	// Add all disposables to the context subscriptions
 	context.subscriptions.push(

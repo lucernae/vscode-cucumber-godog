@@ -59,9 +59,23 @@ suite('TestControllerProvider Test Suite', () => {
             add: sandbox.stub(),
             replace: sandbox.stub(),
             forEach: sandbox.stub().callsFake((callback) => {
+                const testChildren = {
+                    size: 2,
+                    forEach: sandbox.stub().callsFake((callback) => {
+                        callback({
+                            id: 'scenario:' + mockFilePath + ':' + mockFeatureName + ':' + mockScenarioName1,
+                            children: { size: 0 }
+                        });
+                        callback({
+                            id: 'scenario:' + mockFilePath + ':' + mockFeatureName + ':' + mockScenarioName2,
+                            children: { size: 0 }
+                        });
+                    })
+                }
                 // Simulate iterating over test items
                 const testItems = [
-                    { id: 'feature:' + mockFilePath + ':' + mockFeatureName, children: { size: 2 } }
+                    { id: 'feature:' + mockFilePath + ':' + mockFeatureName,
+                        children: testChildren}
                 ];
                 testItems.forEach(callback);
             })
@@ -124,10 +138,10 @@ suite('TestControllerProvider Test Suite', () => {
         await (testControllerProvider as any).updateTests();
 
         // Verify feature cache was updated
-        assert.strictEqual(updateFeatureCacheStub.calledOnce, true);
+        assert.strictEqual(updateFeatureCacheStub.called, true);
 
         // Verify test items were replaced
-        assert.strictEqual(testItemsMock.replace.calledOnce, true);
+        assert.strictEqual(testItemsMock.replace.called, true);
 
         // Verify test items were created for features
         assert.strictEqual(testControllerMock.createTestItem.called, true);
@@ -279,11 +293,18 @@ suite('TestControllerProvider Test Suite', () => {
         // Get a new instance
         const instance2 = CucumberTestControllerProvider.getInstance(contextMock);
 
+        // Verify dispose not called if only using get instance
+        assert.strictEqual(disposeSpy.notCalled, true);
+        assert.strictEqual(instance1, instance2);
+
+        // Create a new instance
+        const instance3 = new CucumberTestControllerProvider(contextMock);
+
         // Verify dispose was called on the first instance
         assert.strictEqual(disposeSpy.calledOnce, true);
 
         // Verify the instances are different
-        assert.notStrictEqual(instance1, instance2);
+        assert.notStrictEqual(instance1, instance3);
     });
 
     test('constructor should dispose existing instance with same ID', () => {

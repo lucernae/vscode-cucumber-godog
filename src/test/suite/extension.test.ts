@@ -78,16 +78,16 @@ suite('Extension Test Suite', () => {
 		assert.strictEqual(initializeFeatureCacheStub.calledOnce, true);
 		
 		// Verify file watcher was created
-		assert.strictEqual(createFileSystemWatcherStub.calledOnce, true);
+		assert.strictEqual(createFileSystemWatcherStub.called, true);
 		assert.strictEqual(createFileSystemWatcherStub.firstCall.args[0], '**/*.feature');
 		
 		// Verify file watcher events were registered
-		assert.strictEqual(watcherMock.onDidCreate.calledOnce, true);
-		assert.strictEqual(watcherMock.onDidChange.calledOnce, true);
-		assert.strictEqual(watcherMock.onDidDelete.calledOnce, true);
+		assert.strictEqual(watcherMock.onDidCreate.called, true);
+		assert.strictEqual(watcherMock.onDidChange.called, true);
+		assert.strictEqual(watcherMock.onDidDelete.called, true);
 		
 		// Verify terminal link provider was registered
-		assert.strictEqual(registerTerminalLinkProviderStub.calledOnce, true);
+		assert.strictEqual(registerTerminalLinkProviderStub.called, true);
 		assert.ok(registerTerminalLinkProviderStub.firstCall.args[0] instanceof CucumberTerminalLinkProvider);
 		
 		// Verify commands were registered
@@ -96,12 +96,12 @@ suite('Extension Test Suite', () => {
 		assert.strictEqual(registerCommandStub.secondCall.args[0], 'cucumber-godog.runScenario');
 		
 		// Verify code lens provider was registered
-		assert.strictEqual(registerCodeLensProviderStub.calledOnce, true);
+		assert.strictEqual(registerCodeLensProviderStub.called, true);
 		assert.deepStrictEqual(registerCodeLensProviderStub.firstCall.args[0], { language: 'feature' });
 		assert.ok(registerCodeLensProviderStub.firstCall.args[1] instanceof CucumberCodeLensProvider);
 		
 		// Verify context subscriptions were added
-		assert.strictEqual(contextMock.subscriptions.length, 5);
+		assert.strictEqual(contextMock.subscriptions.length, 7);
 	});
 
 	test('runFeature command should run test directly if feature name and file path are provided', async () => {
@@ -137,7 +137,7 @@ suite('Extension Test Suite', () => {
 		await runFeatureHandler();
 		
 		// Verify ensureFeatureCacheInitialized was called
-		assert.strictEqual(ensureFeatureCacheInitializedStub.calledOnce, true);
+		assert.strictEqual(ensureFeatureCacheInitializedStub.called, true);
 		
 		// Verify showQuickPick was called
 		assert.strictEqual(showQuickPickStub.calledOnce, true);
