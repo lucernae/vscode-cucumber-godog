@@ -1,12 +1,65 @@
 # Cucumber Godog Extension for VS Code
 
-This extension provides support for Cucumber/Gherkin `.feature` files and integrates with Go's Godog BDD testing framework.
+This extension provides support for Cucumber/Gherkin `.feature` files and integrates with Go's [Godog](https://github.com/cucumber/godog) BDD testing framework.
 
 ## Features
 
-- **Syntax Highlighting**: Full syntax highlighting for Gherkin/Cucumber `.feature` files
 - **Run Tests Directly from Feature Files**: Run buttons appear next to Feature and Scenario definitions
 - **Command Palette Integration**: Run tests for specific features or scenarios from the command palette
+
+### Recommended file structures/tree
+
+The extension will find feature files `*.feature` and then execute go test on the directory one level above.
+So, if you have package called `godogs`, it is best to organize the tests like this:
+
+```
+godogs
+- features
+  - godogs.feature
+- go.mod
+- go.sum
+- godogs_test.go
+```
+
+Godog normally only run tests by Scenario name.
+In order for go test to also pick up the Feature name, you can organize your test function like this:
+
+```go
+func TestFeatures(t *testing.T) {
+	suiteParser := godog.TestSuite{
+		Options: &godog.Options{
+			Paths: []string{"features"},
+		},
+	}
+	features, err := suiteParser.RetrieveFeatures()
+	if err != nil {
+		t.Fatalf("failed to retrieve features: %v", err)
+	}
+	for _, feature := range features {
+		t.Run(feature.Feature.Name, func(t *testing.T) {
+			suite := godog.TestSuite{
+				ScenarioInitializer: InitializeScenario,
+				Options: &godog.Options{
+					Format: "pretty",
+					FeatureContents: []godog.Feature{
+						{
+							Name:     feature.Feature.Name,
+							Contents: feature.Content,
+						},
+					},
+					TestingT: t, // Testing instance that will run subtests.
+				},
+			}
+
+			if suite.Run() != 0 {
+				t.Fatal("non-zero status returned, failed to run feature tests")
+			}
+		})
+	}
+}
+```
+
+This allows Go test to associate each test case with the pattern name: `TestFunction/FeatureName/ScenarioName`.
 
 ### Run Tests from Feature Files
 
@@ -15,8 +68,6 @@ The extension provides multiple ways to run tests directly from your `.feature` 
 #### CodeLens Buttons
 - Click the "▶ Run Feature" button above a Feature definition to run all scenarios in that feature
 - Click the "▶ Run Scenario" button above a Scenario or Scenario Outline definition to run just that scenario
-
-![Run Feature and Scenario buttons](images/run-buttons.png)
 
 #### Gutter Icons
 - Click the run icon in the gutter (next to the line number) to run a feature or scenario
@@ -91,89 +142,17 @@ Example: `"cucumber-godog.testPatternFormat": "^${sanitizedFeatureName}_${saniti
 
 ## Release Notes
 
-### 0.0.3
-
-- Added gutter icons for running features and scenarios
-- Integrated with VS Code's Test Explorer
-- Improved test discovery and execution
-
-### 0.0.2
-
-- Added configuration options for customizing test execution
-- Added variable substitution in test pattern format
-- Improved terminal output with proper quoting of test patterns
-
-### 0.0.1
-
-Initial release with:
-- Syntax highlighting for `.feature` files
-- Run buttons for features and scenarios
-- Command palette integration
-
----
-
-## Running the Extension from CLI
-
-You can run the extension directly from the command line without opening VS Code's UI. This is useful for:
-
-- Testing the extension in a headless environment
-- Running the extension in CI/CD pipelines
-- Automating extension development workflows
-
-### Using npm/yarn
-
-```bash
-# Using npm
-npm run run-extension
-
-# Using yarn
-yarn run-extension
-```
-
-### Verifying the setup
-
-You can verify that the CLI extension runner is set up correctly by running:
-
-```bash
-# Using npm
-npm run test-cli
-
-# Using yarn
-yarn test-cli
-
-# Or directly
-./test-cli-extension.sh
-```
-
-This will check that all the necessary components are in place without actually launching the extension.
-
-### Using the script directly
-
-```bash
-# Make sure the script is executable
-chmod +x run-extension.js
-
-# Run the script
-./run-extension.js
-```
-
-The script will:
-1. Detect your VS Code installation location
-2. Launch VS Code with the extension in development mode
-3. Display logs in the terminal
-
-### Customizing the script
-
-You can modify the `run-extension.js` file to customize how the extension is launched:
-
-- Change the VS Code executable path if it's installed in a non-standard location
-- Add additional command-line arguments
-- Configure environment variables
+See [CHANGELOG.md](CHANGELOG.md) for the full release history.
 
 ## For more information
 
 * [Godog GitHub Repository](https://github.com/cucumber/godog)
 * [Cucumber Documentation](https://cucumber.io/docs/cucumber/)
 * [VS Code Extension API](https://code.visualstudio.com/api)
+
+## Funding
+
+This small extension was made in my spare time.
+If you want, you can show support via GitHub sponsor: https://github.com/lucernae/vscode-cucumber-godog
 
 **Enjoy!**
