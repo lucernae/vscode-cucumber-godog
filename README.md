@@ -1,4 +1,4 @@
-# Cucumber Godog Extension for VS Code
+# Cucumber Godog Extension for VS Code [![Version](https://img.shields.io/visual-studio-marketplace/v/lucernae.cucumber-godog)](https://marketplace.visualstudio.com/items?itemName=lucernae.cucumber-godog) [![Installs](https://img.shields.io/visual-studio-marketplace/i/lucernae.cucumber-godog)](https://marketplace.visualstudio.com/items?itemName=lucernae.cucumber-godog)
 
 This extension provides support for Cucumber/Gherkin `.feature` files and integrates with Go's [Godog](https://github.com/cucumber/godog) BDD testing framework.
 
