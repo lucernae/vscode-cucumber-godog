@@ -2,7 +2,7 @@
   "name": "cucumber-godog",
   "displayName": "cucumber-godog",
   "description": "cucumber runner for godog",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "license": "MIT",
   "repository": {
     "url": "https://github.com/lucernae/vscode-cucumber-godog"
