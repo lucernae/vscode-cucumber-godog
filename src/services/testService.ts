@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import * as fs from 'fs';
 import { sanitizeName } from '../utils/stringUtils';
 
 /**
@@ -47,6 +48,52 @@ export function runTest(filePath: string, featureName?: string, scenarioName?: s
 }
 
 /**
+ * Finds the nearest Go test file directory by searching upward from the given directory
+ * @param startDir The directory to start searching from
+ * @returns The directory containing the nearest Go test file, or the directory containing go.mod if no test file is found
+ */
+function findNearestGoTestDirectory(startDir: string): string {
+	let currentDir = path.resolve(startDir);
+	let goModDir: string | null = null;
+
+	while (true) {
+		// Check if current directory contains go.mod
+		const goModPath = path.join(currentDir, 'go.mod');
+		if (fs.existsSync(goModPath)) {
+			goModDir = currentDir;
+		}
+
+		// Check if current directory contains any Go test files
+		try {
+			const files = fs.readdirSync(currentDir);
+			const hasGoTestFile = files.some(file => file.endsWith('_test.go'));
+			
+			if (hasGoTestFile) {
+				return currentDir;
+			}
+		} catch (error) {
+			// If we can't read the directory, continue searching upward
+		}
+
+		// If we found go.mod and haven't found a test file yet, stop here
+		if (goModDir && currentDir === goModDir) {
+			return goModDir;
+		}
+
+		// Move up one directory
+		const parentDir = path.dirname(currentDir);
+		
+		// If we've reached the root directory, stop
+		if (parentDir === currentDir) {
+			// Return the go.mod directory if we found one, otherwise return the original directory
+			return goModDir || startDir;
+		}
+		
+		currentDir = parentDir;
+	}
+}
+
+/**
  * Calculates the working directory for the test
  * @param dirPath The directory containing the feature file
  * @param programWorkingDirectory The configured working directory
@@ -56,10 +103,10 @@ function calculateWorkingDirectory(dirPath: string, programWorkingDirectory: str
 	if (programWorkingDirectory.startsWith('.')) {
 		// if so, calculate the working directory relative to the feature file
 		const relativePath = path.join(dirPath, programWorkingDirectory);
-		return path.resolve(relativePath);
+		return findNearestGoTestDirectory(path.resolve(relativePath));
 	} else {
 		// if not, use the programWorkingDirectory as is
-		return path.resolve(dirPath, programWorkingDirectory);
+		return findNearestGoTestDirectory(path.resolve(dirPath, programWorkingDirectory));
 	}
 }
 
